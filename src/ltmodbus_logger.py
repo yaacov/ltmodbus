@@ -20,7 +20,7 @@
 
 """ ltmodbus_logger.py
 
-A modbus RS485 little trend reader
+A little-modbus TCP / Serial  data log reader
 """
 
 import os
@@ -69,7 +69,7 @@ class LTModbusLogger():
         self.soc.set_par(self.unit, 5940, 1, [0,])
     
     def read_points(self):
-        """ read ftrend points
+        """ read data log register number points
         """
         
         # points are in pars 5975 ...
@@ -77,12 +77,14 @@ class LTModbusLogger():
         
     def read_data(self):
         """ read current frame date and data
+        
+        return a tupple of current reading line (timestamp, data... )
         """
         
         # data is in pars 5951 ...
         data = self.soc.get_par(self.unit, 5951, 18)
         
-        # get timestamp
+        # date and time are in pars 5941 ...
         d,m,y,h,M,s = self.soc.get_par(self.unit, 5941, 6)
         time_tuple = map(int, (y,m,d,h,M,s,0,0,0))
         
@@ -93,9 +95,15 @@ class LTModbusLogger():
         
         return (timestamp,) + data
 
-def dump_line(f, c, csv_line, sql_line):
+def dump_line(f, c, frame):
     """ dump data line to data-base, csv-file and stdout
     """
+    
+    frame_time_str_csv = time.strftime(CSV_DATETIME_FORMAT, time.gmtime(frame[0]))
+    frame_time_str_sql = time.strftime(SQL_DATETIME_FORMAT, time.gmtime(frame[0]))
+    
+    csv_line = "%s,%s" % (frame_time_str_csv, ",".join(["%.02f" % p for p in frame[1:]]))
+    sql_line = "%d,'%s',%s" % (frame[0], frame_time_str_sql, ",".join(["%.02f" % p for p in frame[1:]]))
     
     print csv_line
     
@@ -113,7 +121,7 @@ def main():
     """
     
     # command line parser
-    parser = argparse.ArgumentParser(description='LT-Modbus trend reader.')
+    parser = argparse.ArgumentParser(description='LT-Modbus data log reader.')
     
     parser.add_argument('-u', dest='unit',
                        type=int, default=31,
@@ -200,12 +208,7 @@ def main():
         
         # if we have valid line 
         if frame[0] != 0:
-            frame_time_str_csv = time.strftime(CSV_DATETIME_FORMAT, time.gmtime(frame[0]))
-            frame_time_str_sql = time.strftime(SQL_DATETIME_FORMAT, time.gmtime(frame[0]))
-            
-            csv_line = "%s,%s" % (frame_time_str_csv, ",".join(["%.02f" % p for p in frame[1:]]))
-            sql_line = "%d,'%s',%s" % (frame[0], frame_time_str_sql, ",".join(["%.02f" % p for p in frame[1:]]))
-            dump_line(f, c, csv_line, sql_line)
+            dump_line(f, c, frame)
             
     # close open files
     if f:
