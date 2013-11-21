@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% import 'admin/lib.html' as lib with context %}
+
+{% macro url() -%}
+    {{ url_for('admin.static', *varargs, **kwargs) }}
+{%- endmacro %}
+
+{% macro render_form_read_button(cancel_url, extra=None) %}
+    <div class="control-group">
+      <div class="controls">
+        <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('Read unit') }}" />
+        {% if extra %}
+        {{ extra }}
+        {% endif %}
+        {% if cancel_url %}
+        <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('Cancel') }}</a>
+        {% endif %}
+      </div>
+    </div>
+{% endmacro %}
+
+{% block head %}
+    {{ super() }}
+    <link href="{{ url(filename='select2/select2.css') }}" rel="stylesheet">
+    <link href="{{ url(filename='datetimepicker/bootstrap-datetimepicker.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+
+{% call lib.form_tag(form) %}
+    {{ lib.render_form_fields(form, form_opts=form_opts, form_rules=form_rules) }}
+    {{ render_form_read_button(return_url) }}
+{% endcall %}
+  
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  <script src="{{ url(filename='datetimepicker/bootstrap-datetimepicker.js') }}"></script>
+  <script src="{{ url(filename='admin/js/form.js') }}"></script>
+{% endblock %}
+
