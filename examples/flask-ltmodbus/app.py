@@ -21,7 +21,7 @@
 import os.path as op
 
 from flask import Flask
-from flask import redirect
+from flask import redirect, send_from_directory
 
 from flask.ext.admin.contrib import fileadmin
 from flask.ext.sqlalchemy import SQLAlchemy

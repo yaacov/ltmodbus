@@ -43,7 +43,6 @@ class PointsView(sqla.ModelView):
     column_default_sort = 'item'
 
 class UnitView(sqla.ModelView):
-    com_choices=[('COM1', 'COM1'), ('COM2', 'COM2'), ('/dev/ttyUSB0', 'USB0')]
     
     # Visible columns in the list view
     column_list = ['title', 'com', 'cpu']
@@ -52,12 +51,22 @@ class UnitView(sqla.ModelView):
     column_default_sort = 'title'
     
 class ComsView(sqla.ModelView):
-    form_columns = ('com', 'baud', 'databits', 'parity', 'stopbits', 'timeout')
+    form_columns = ('com', 'baud', 'databits', 'parity', 'timeout')
+    column_list = ('com', 'baud', 'databits', 'parity', 'timeout')
     
-    com_choices=[('COM1', 'COM1'), ('COM2', 'COM2'), ('/dev/ttyUSB0', 'USB0')]
-    parity_choices=[('E', 'Even'), ('O', 'Odd'), ('N', 'None')]
-    stopbits_choices=[('0', 'No'), ('1', '1')]
-    timeout_choices=[('1', '1s'), ('1.5', '1.5s')]
+    com_choices=[('COM%d'%i,'COM%d'%i) for i in range(1,31)]+[('/dev/ttyUSB0', 'USB0'),('/dev/ttyUSB1', 'USB1')]
+    parity_choices=[('E', 'Even (default)'), ('O', 'Odd'), ('N', 'None')]
+    stopbits_choices=[('1', '1 (default)'), ('0', 'No')]
+    timeout_choices=[('0.5', '0.5s'), ('1', '1.0s'), ('1.5', '1.5s'), ('3', '3.0s')]
+    baud_choices=[
+                ('600','600'), 
+                ('1200','1200'), 
+                ('2400','2400'), 
+                ('4800','4800 (default)'), 
+                ('9600','9600'), 
+                ('19200','19.2k'), 
+                ('38400','38.4k'), 
+                ('115200','115.2k')]
     
     # Visible columns in the list view
     form_overrides = dict(
@@ -69,6 +78,7 @@ class ComsView(sqla.ModelView):
         timeout=Select2Field)
     column_formatters = dict(
         com=lambda v, c, m, p: dict(v.com_choices)[m.com],
+        baud=lambda v, c, m, p: dict(v.baud_choices)[str(m.baud)],
         parity=lambda v, c, m, p: dict(v.parity_choices)[m.parity],
         stopbits=lambda v, c, m, p: dict(v.stopbits_choices)[str(m.stopbits)],
         timeout=lambda v, c, m, p: dict(v.timeout_choices)[str(m.timeout)],
@@ -79,10 +89,10 @@ class ComsView(sqla.ModelView):
             choices=com_choices
         ),
         baud=dict(
-            choices=[('4800', '4800'), ('19600', '19600'), ('38400', '38400')]
+            choices=baud_choices
         ),
         databits=dict(
-            choices=[('8', '8'),('7', '7')]
+            choices=[('7', '7'), ('8', '8 (default)'),]
         ),
         parity=dict(
             choices=parity_choices
@@ -103,8 +113,12 @@ class UnitReadForm(Form):
         'From date',
         widget=form.DateTimePickerWidget(),
         default=lambda: datetime.datetime.now() - datetime.timedelta(hours=1))
+    todate = DateTimeField(
+        'To date',
+        widget=form.DateTimePickerWidget(),
+        default=lambda: datetime.datetime.now())
     number = Select2Field(
-        'Length', 
+        'Max length', 
         choices=[('50','50 records'),('100','100 records'),('500','500 records')])
 
 class HomeView(AdminIndexView):
@@ -113,16 +127,17 @@ class HomeView(AdminIndexView):
         global logger
         
         form = UnitReadForm(request.form)
+        
+        if logger.busy_flag:
+            flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
+            return self.render('admin/home.html', form=form)
+            
         if request.method == 'POST' and form.validate():
             file_name = "%s_%s_%s.csv" % (
                 form.unit.data, 
                 form.date.data.strftime("%Y-%m-%d_%H-%M"),
                 form.number.data)
             file_name = file_name.lower().replace(' ','_')
-            
-            if logger.busy_flag:
-                flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
-                return self.render('admin/home.html', form=form)
             
             logger.busy_flag = True
             

@@ -9,6 +9,7 @@
     <div class="control-group">
       <div class="controls">
         <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('Read unit') }}" />
+        <a href="/admin" class="btn btn-large">{{ _gettext('Refresh') }}</a>
         {% if extra %}
         {{ extra }}
         {% endif %}
@@ -26,6 +27,10 @@
 {% endblock %}
 
 {% block body %}
+
+<div class="page-header">
+  <h1>Flash Trends <small>Data logger application.</small></h1>
+</div>
 
 {% call lib.form_tag(form) %}
     {{ lib.render_form_fields(form, form_opts=form_opts, form_rules=form_rules) }}

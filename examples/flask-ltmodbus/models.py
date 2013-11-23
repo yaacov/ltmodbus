@@ -33,16 +33,16 @@ class Points(db.Model):
         return self.title
    
 class Coms(db.Model):
-    com_choices=[('COM1', 'COM1'), ('COM2', 'COM2'), ('/dev/ttyUSB0', 'USB0')]
+    com_choices=[('COM%d'%i,'COM%d'%i) for i in range(1,31)]+[('/dev/ttyUSB0', 'USB0'),('/dev/ttyUSB1', 'USB1')]
     
     id = db.Column(db.Integer, primary_key=True)
     com = db.Column(db.String(16), unique=True, nullable=False)
-    baud = db.Column(db.Integer)
+    baud = db.Column(db.Integer, default=4800)
     
-    databits  = db.Column(db.Integer)
-    parity = db.Column(db.String(16))
-    stopbits = db.Column(db.Integer)
-    timeout = db.Column(db.Integer)
+    databits  = db.Column(db.Integer, default=8)
+    parity = db.Column(db.String(16), default='E')
+    stopbits = db.Column(db.Integer, default=1)
+    timeout = db.Column(db.Integer, default=1)
     
     # Required for administrative interface
     def __str__(self):
@@ -55,7 +55,7 @@ class Unit(db.Model):
     
     com_id = db.Column(db.Integer, db.ForeignKey(Coms.id))
     com = db.relationship(Coms, backref='unit')
-    cpu = db.Column(db.Integer)
+    cpu = db.Column(db.Integer, default=31)
     
     # Required for administrative interface
     def __str__(self):
