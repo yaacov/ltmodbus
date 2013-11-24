@@ -169,13 +169,14 @@ class LTModbusLogger():
                     frame = self.read_data()
                     self.inc_date()
                     self.error = None
+                    
+                    # if we have valid line 
+                    if frame[0] != 0:
+                        self.dump_line(f, frame)
+                    
                 except Exception, e:
                     self.error = "Can't get data frame(%d) from unit" % i
-                
-                # if we have valid line 
-                if frame[0] != 0:
-                    self.dump_line(f, frame)
-                
+                    
                 self.busy_percent = 100.0 * float(i) / float(form.number.data)
                 i += 1
         
