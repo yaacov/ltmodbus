@@ -23,6 +23,7 @@ import thread
 
 from flask import request
 from flask import flash
+from flask import redirect
 from flask.ext.admin import form
 from flask.ext.admin import expose, AdminIndexView
 from flask.ext.admin.contrib import sqla
@@ -111,6 +112,7 @@ class HomeView(AdminIndexView):
         
         form = UnitReadForm(request.form)
         
+        
         if logger.busy_flag:
             flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
             return self.render('admin/home.html', form=form, return_url = '/admin/')
@@ -133,9 +135,19 @@ class HomeView(AdminIndexView):
                 msg = 'Writing data to file "%s", please wait...' % file_name
                 flash(msg)
                 
-                thread.start_new_thread(logger.get_data, (file_name, form))
+                logger.run = True
+                thread.start_new_thread(logger.get_data, (file_name, form, Points.query))
                 
                 return self.render('admin/home.html', form=form, return_url = '/admin/')
                 
         return self.render('admin/home.html', form=form)
-
+    
+    @expose("/stop/", methods=('GET', 'POST'))
+    def hello(self):
+         global logger
+        
+         logger.run = False
+         logger.busy_flag = False
+         
+         flash('Stoping earlier request, please wait...')
+         return redirect("/admin")

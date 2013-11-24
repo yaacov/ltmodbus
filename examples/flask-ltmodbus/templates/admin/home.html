@@ -12,7 +12,8 @@
         {{ extra }}
         {% endif %}
         {% if cancel_url %}
-        <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('Refresh') }}</a>
+            <a href="/admin/" class="btn btn-info btn-large">{{ _gettext('Refresh') }}</a>
+            <input type="button" onclick="stop();" class="btn btn-default btn-large" value="{{ _gettext('Stop reading') }}" />
         {% else %}
         <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('Read unit') }}" />
         {% endif %}
@@ -43,5 +44,15 @@
   {{ super() }}
   <script src="{{ url(filename='datetimepicker/bootstrap-datetimepicker.js') }}"></script>
   <script src="{{ url(filename='admin/js/form.js') }}"></script>
+  <script>
+  var stop=function() {
+    var ok = confirm('You sure you want to stop reading unit?');
+    
+    if (!ok) return ok;
+    
+    $('form').attr('action','/admin/stop/');
+    $('form').submit();
+  }
+  </script>
 {% endblock %}
 

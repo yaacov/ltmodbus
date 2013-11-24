@@ -37,8 +37,8 @@ if __name__ == '__main__':
     # Create admin interface
     admin = admin.Admin(app, 'Flash Trends', index_view=HomeView(name='Home'))
     
-    admin.add_view(UnitView(Unit, db.session, name='Units',  category='Setup'))
-    admin.add_view(ComsView(Coms, db.session, name='Serial coms',  category='Setup'))
+    admin.add_view(UnitView(Unit, db.session, name='Units', category='Setup'))
+    admin.add_view(ComsView(Coms, db.session, name='Serial coms', category='Setup'))
     admin.add_view(PointsView(Points, db.session, category='Setup'))
     
     admin.add_view(files)

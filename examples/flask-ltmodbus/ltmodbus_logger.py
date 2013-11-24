@@ -40,6 +40,7 @@ class LTModbusLogger():
     
     busy_flag = False
     busy_percent = 0
+    run = True
     
     def __init__(self):
         self.soc = None
@@ -110,8 +111,19 @@ class LTModbusLogger():
             f.write("%s\n" % csv_line)
         except Exception, e:
             pass
-
-    def get_data(self, file_name, form):
+    
+    def get_point_title(self, item, points):
+        """
+        """
+        
+        point = points.filter_by(item=int(item)).first()
+        
+        if point:
+            return point.title
+            
+        return "P%02d" % item
+        
+    def get_data(self, file_name, form, points):
         """
         """
         
@@ -129,6 +141,17 @@ class LTModbusLogger():
         struct_time = form.date.data.timetuple()
         y,m,d,h,M,s,wd,yd,tz = struct_time
         
+        # try to read trend points
+        trend_points = self.read_points()
+        trend_headers = [self.get_point_title(i, points) for i in trend_points]
+        
+        # write headers to first line
+        csv_line = ",".join(["time",] + trend_headers)
+        try:
+            f.write("%s\n" % csv_line)
+        except Exception, e:
+            pass
+        
         # read N frames starting from timestamp
         try:
             self.set_date(d,m,y,h,M,s)
@@ -136,7 +159,8 @@ class LTModbusLogger():
             pass
         
         # read data
-        for i in range(int(form.number.data)):
+        i = 0
+        while i < (int(form.number.data)) and self.run:
             # get new data line
             try:
                 frame = self.read_data()
@@ -149,6 +173,7 @@ class LTModbusLogger():
                 self.dump_line(f, frame)
             
             self.busy_percent = 100.0 * float(i) / float(form.number.data)
+            i += 1
         
         f.close()
         self.soc.close()
