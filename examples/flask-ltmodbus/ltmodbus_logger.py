@@ -41,6 +41,7 @@ class LTModbusLogger():
     busy_flag = False
     busy_percent = 0
     run = True
+    error = None
     
     def __init__(self):
         self.soc = None
@@ -127,11 +128,12 @@ class LTModbusLogger():
         """
         """
         
-        print "file", file_name
+        self.error = None
         
         try:
             f = open(path + '/' + file_name + ".part", 'w')
         except Exception, e:
+            self.error = "Can't open file"
             return
         
         # set unit number
@@ -150,36 +152,47 @@ class LTModbusLogger():
         try:
             f.write("%s\n" % csv_line)
         except Exception, e:
-            pass
+            self.error = "Can't write to file"
         
         # read N frames starting from timestamp
         try:
             self.set_date(d,m,y,h,M,s)
         except Exception, e:
-            pass
+            self.error = "Can't set data to unit"
         
-        # read data
-        i = 0
-        while i < (int(form.number.data)) and self.run:
-            # get new data line
-            try:
-                frame = self.read_data()
-                self.inc_date()
-            except Exception, e:
-                pass
-            
-            # if we have valid line 
-            if frame[0] != 0:
-                self.dump_line(f, frame)
-            
-            self.busy_percent = 100.0 * float(i) / float(form.number.data)
-            i += 1
+        if self.error is None:
+            # read data
+            i = 0
+            while i < (int(form.number.data)) and self.run:
+                # get new data line
+                try:
+                    frame = self.read_data()
+                    self.inc_date()
+                    self.error = None
+                except Exception, e:
+                    self.error = "Can't get data frame(%d) from unit" % i
+                
+                # if we have valid line 
+                if frame[0] != 0:
+                    self.dump_line(f, frame)
+                
+                self.busy_percent = 100.0 * float(i) / float(form.number.data)
+                i += 1
         
         f.close()
         self.soc.close()
         
         # rename file
-        os.rename(path + '/' + file_name + ".part", path + '/' + file_name)
+        try:
+            os.remove(path + '/' + file_name)
+        except Exception:
+            pass
         
+        try:
+            os.rename(path + '/' + file_name + ".part", path + '/' + file_name)
+        except Exception:
+            self.error = "Can't rename file"
+            
         self.busy_flag = False
-
+        self.busy_percent = 0
+        

@@ -112,9 +112,11 @@ class HomeView(AdminIndexView):
         
         form = UnitReadForm(request.form)
         
-        
         if logger.busy_flag:
-            flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
+            if logger.error is None:
+                flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
+            else:
+                flash('%s' % logger.error)
             return self.render('admin/home.html', form=form, return_url = '/admin/')
             
         if request.method == 'POST' and form.validate():
@@ -128,17 +130,17 @@ class HomeView(AdminIndexView):
             
             try:
                 logger.open_soc(form.unit.data.com)
+            
+                if logger.soc:
+                    msg = 'Writing data to file "%s", please wait...' % file_name
+                    flash(msg)
+                    
+                    logger.run = True
+                    thread.start_new_thread(logger.get_data, (file_name, form, Points.query))
+                    
+                    return self.render('admin/home.html', form=form, return_url = '/admin/')
             except Exception, e:
                 flash('%s' % e, 'error')
-            
-            if logger.soc:
-                msg = 'Writing data to file "%s", please wait...' % file_name
-                flash(msg)
-                
-                logger.run = True
-                thread.start_new_thread(logger.get_data, (file_name, form, Points.query))
-                
-                return self.render('admin/home.html', form=form, return_url = '/admin/')
                 
         return self.render('admin/home.html', form=form)
     
@@ -148,6 +150,8 @@ class HomeView(AdminIndexView):
         
          logger.run = False
          logger.busy_flag = False
+         logger.busy_percent = 0
+         logger.error = None
          
          flash('Stoping earlier request, please wait...')
          return redirect("/admin")
