@@ -8,13 +8,13 @@
 {% macro render_form_read_button(cancel_url, extra=None) %}
     <div class="control-group">
       <div class="controls">
-        <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('Read unit') }}" />
-        <a href="/admin" class="btn btn-large">{{ _gettext('Refresh') }}</a>
         {% if extra %}
         {{ extra }}
         {% endif %}
         {% if cancel_url %}
-        <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('Cancel') }}</a>
+        <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('Refresh') }}</a>
+        {% else %}
+        <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('Read unit') }}" />
         {% endif %}
       </div>
     </div>

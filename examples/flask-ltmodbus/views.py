@@ -21,9 +21,6 @@
 import datetime
 import thread
 
-from wtforms import Form, DateTimeField, validators
-from wtforms.ext.sqlalchemy.fields import QuerySelectField
-
 from flask import request
 from flask import flash
 from flask.ext.admin import form
@@ -33,6 +30,7 @@ from flask.ext.admin.form.fields import Select2Field, TimeField
 
 from app import app, db, path, logger
 from models import Points, Coms, Unit
+from forms import UnitReadForm
 
 # Customized Post model admin
 class PointsView(sqla.ModelView):
@@ -56,6 +54,7 @@ class ComsView(sqla.ModelView):
     
     com_choices=[('COM%d'%i,'COM%d'%i) for i in range(1,31)]+[('/dev/ttyUSB0', 'USB0'),('/dev/ttyUSB1', 'USB1')]
     parity_choices=[('E', 'Even (default)'), ('O', 'Odd'), ('N', 'None')]
+    databits_choices=[('7', '7'), ('8', '8 (default)'),]
     stopbits_choices=[('1', '1 (default)'), ('0', 'No')]
     timeout_choices=[('0.5', '0.5s'), ('1', '1.0s'), ('1.5', '1.5s'), ('3', '3.0s')]
     baud_choices=[
@@ -80,6 +79,7 @@ class ComsView(sqla.ModelView):
         com=lambda v, c, m, p: dict(v.com_choices)[m.com],
         baud=lambda v, c, m, p: dict(v.baud_choices)[str(m.baud)],
         parity=lambda v, c, m, p: dict(v.parity_choices)[m.parity],
+        databits=lambda v, c, m, p: dict(v.databits_choices)[str(m.databits)],
         stopbits=lambda v, c, m, p: dict(v.stopbits_choices)[str(m.stopbits)],
         timeout=lambda v, c, m, p: dict(v.timeout_choices)[str(m.timeout)],
         )
@@ -92,7 +92,7 @@ class ComsView(sqla.ModelView):
             choices=baud_choices
         ),
         databits=dict(
-            choices=[('7', '7'), ('8', '8 (default)'),]
+            choices=databits_choices
         ),
         parity=dict(
             choices=parity_choices
@@ -104,23 +104,6 @@ class ComsView(sqla.ModelView):
             choices=timeout_choices
         ))
 
-class UnitReadForm(Form):
-    unit = QuerySelectField(
-        'Select Unit', 
-        widget = form.Select2Widget(), 
-        query_factory=lambda: Unit.query)
-    date = DateTimeField(
-        'From date',
-        widget=form.DateTimePickerWidget(),
-        default=lambda: datetime.datetime.now() - datetime.timedelta(hours=1))
-    todate = DateTimeField(
-        'To date',
-        widget=form.DateTimePickerWidget(),
-        default=lambda: datetime.datetime.now())
-    number = Select2Field(
-        'Max length', 
-        choices=[('50','50 records'),('100','100 records'),('500','500 records')])
-
 class HomeView(AdminIndexView):
     @expose("/", methods=('GET', 'POST'))
     def index(self):
@@ -130,7 +113,7 @@ class HomeView(AdminIndexView):
         
         if logger.busy_flag:
             flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
-            return self.render('admin/home.html', form=form)
+            return self.render('admin/home.html', form=form, return_url = '/admin/')
             
         if request.method == 'POST' and form.validate():
             file_name = "%s_%s_%s.csv" % (
@@ -151,6 +134,8 @@ class HomeView(AdminIndexView):
                 flash(msg)
                 
                 thread.start_new_thread(logger.get_data, (file_name, form))
+                
+                return self.render('admin/home.html', form=form, return_url = '/admin/')
                 
         return self.render('admin/home.html', form=form)
 
