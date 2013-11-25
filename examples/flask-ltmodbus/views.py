@@ -144,8 +144,8 @@ class HomeView(AdminIndexView):
                 
         return self.render('admin/home.html', form=form)
     
-    @expose("/stop/", methods=('GET', 'POST'))
-    def hello(self):
+    @expose("/stop/", methods=('POST',))
+    def stop(self):
          global logger
         
          logger.run = False
