@@ -66,13 +66,13 @@ class LTModbusLogger():
         """ set reading frame to date
         """
         
-        self.soc.set_par(self.unit, 5941, 6, [d,m,y,h,M,s])
+        return self.soc.set_par(self.unit, 5941, 6, [d,m,y,h,M,s])
         
     def inc_date(self):
         """ set reading frame to next frame
         """
         
-        self.soc.set_par(self.unit, 5940, 1, [0,])
+        return self.soc.set_par(self.unit, 5940, 1, [0,])
     
     def read_points(self):
         """ read data log register number points
@@ -153,11 +153,14 @@ class LTModbusLogger():
             f.write("%s\n" % csv_line)
         except Exception, e:
             self.error = "Can't write to file"
-        
+            
         # read N frames starting from timestamp
         try:
-            self.set_date(d,m,y,h,M,s)
+            data = self.set_date(d,m,y,h,M,s)
         except Exception, e:
+            self.error = "Can't set data to unit"
+        
+        if not data:
             self.error = "Can't set data to unit"
         
         if self.error is None:
@@ -175,7 +178,7 @@ class LTModbusLogger():
                         self.dump_line(f, frame)
                     
                 except Exception, e:
-                    self.error = "Can't get data frame(%d) from unit" % i
+                    pass
                     
                 self.busy_percent = 100.0 * float(i) / float(form.number.data)
                 i += 1
@@ -192,8 +195,8 @@ class LTModbusLogger():
         try:
             os.rename(path + '/' + file_name + ".part", path + '/' + file_name)
         except Exception:
-            self.error = "Can't rename file"
-            
+            self.error = "Can't rename file \"%s\"" % file_name
+        
         self.busy_flag = False
         self.busy_percent = 0
         

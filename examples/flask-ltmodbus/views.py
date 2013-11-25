@@ -22,8 +22,11 @@ import datetime
 import thread
 
 from flask import request
+from flask import jsonify
 from flask import flash
 from flask import redirect
+from flask.views import View
+
 from flask.ext.admin import form
 from flask.ext.admin import expose, AdminIndexView
 from flask.ext.admin.contrib import sqla
@@ -112,13 +115,15 @@ class HomeView(AdminIndexView):
         
         form = UnitReadForm(request.form)
         
+        if logger.error is not None:
+            flash('%s' % logger.error, 'error')
+            logger.error = None
+        
         if logger.busy_flag:
             if logger.error is None:
-                flash('Working on earlier request, please wait... (%d%%)' % logger.busy_percent, 'error')
-            else:
-                flash('%s' % logger.error)
+                flash('Working on earlier request.', 'error')
             return self.render('admin/home.html', form=form, return_url = '/admin/')
-            
+        
         if request.method == 'POST' and form.validate():
             file_name = "%s_%s_%s.csv" % (
                 form.unit.data, 
@@ -132,7 +137,7 @@ class HomeView(AdminIndexView):
                 logger.open_soc(form.unit.data.com)
             
                 if logger.soc:
-                    msg = 'Writing data to file "%s", please wait...' % file_name
+                    msg = 'Writing data to file "%s".' % file_name
                     flash(msg)
                     
                     logger.run = True
@@ -153,5 +158,15 @@ class HomeView(AdminIndexView):
          logger.busy_percent = 0
          logger.error = None
          
-         flash('Stoping earlier request, please wait...')
+         flash('Stoping earlier request.')
          return redirect("/admin")
+
+class State(View):
+
+    def dispatch_request(self):
+        global logger
+        
+        return jsonify(state=logger.error, run=logger.busy_flag, percent=logger.busy_percent)
+
+app.add_url_rule('/state.json', view_func=State.as_view('state.json'))
+
