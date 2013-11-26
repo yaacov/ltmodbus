@@ -135,7 +135,7 @@ class HomeView(AdminIndexView):
             
             try:
                 logger.open_soc(form.unit.data.com)
-            
+                
                 if logger.soc:
                     msg = 'Writing data to file "%s".' % file_name
                     flash(msg)
@@ -146,7 +146,9 @@ class HomeView(AdminIndexView):
                     return self.render('admin/home.html', form=form, return_url = '/admin/')
             except Exception, e:
                 flash('%s' % e, 'error')
-                
+                logger.run = False
+                logger.busy_flag = False
+        
         return self.render('admin/home.html', form=form)
     
     @expose("/stop/", methods=('POST',))
